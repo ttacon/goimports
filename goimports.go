@@ -37,6 +37,10 @@ var (
 	printerMode printer.Mode
 )
 
+var (
+	standardLibPaths = make(map[string]bool)
+)
+
 func report(err error) {
 	scanner.PrintError(os.Stderr, err)
 	exitCode = 2
@@ -158,6 +162,23 @@ func gofmtMain() {
 
 	initParserMode()
 	initPrinterMode()
+
+	// create list of all imports paths in standard lib
+	for _, v := range common {
+		if _, ok := standardLibPaths[v]; !ok {
+			standardLibPaths[v] = true
+		}
+	}
+	// merge common with imports determined from GOPATH
+	importsFromGoPath := GetImportsFromGoPath()
+	for k, v := range importsFromGoPath {
+		if currentVal, ok := common[k]; ok {
+			//key already exists output warning
+			fmt.Fprintf(os.Stderr, "import %s already exists with mapping to %s, cannot add mapping to %s\n", k, currentVal, v)
+		} else {
+			common[k] = v
+		}
+	}
 
 	if flag.NArg() == 0 {
 		if err := processFile("<standard input>", os.Stdin, os.Stdout, true); err != nil {
