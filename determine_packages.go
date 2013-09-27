@@ -29,10 +29,10 @@ type exportsToPackages struct {
 }
 
 func GetImportsFromGoPath(regenIndex bool) map[string]string {
-	fmt.Fprintf(os.Stderr, "\"%v\"\n", os.Getenv("GOPATH"))
-	fileName := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "bradfitz", "goimports", "goPathImports.json")
+	// fmt.Fprintf(os.Stderr, "\"%v\"\n", os.Getenv("GOPATH"))
+	fileName := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "ttacon", "goimports", "goPathImports.json")
 	fileInfo, err := os.Stat(fileName)
-	fmt.Fprintf(os.Stderr, "%v\n", err)
+	// fmt.Fprintf(os.Stderr, "%v\n", err)
 	if err != nil || regenIndex || time.Now().Sub(fileInfo.ModTime()).Hours() > 24.0 {
 		// it either doesn't exist or it's unuseable, so let's make a new one
 		filepath.Walk(filepath.Join(goPath, "src/"), func(path string, info os.FileInfo, err error) error {
