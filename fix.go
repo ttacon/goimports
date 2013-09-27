@@ -120,6 +120,7 @@ func fixImports(f *ast.File) {
 
 	for _, gd := range genDecls {
 		gd.Specs = filterUnusedSpecs(unusedImport, gd.Specs)
+		gd.Specs = filterDuplicateSpecs(gd.Specs)
 		if len(gd.Specs) == 1 {
 			gd.Lparen = 0
 		}
@@ -127,6 +128,35 @@ func fixImports(f *ast.File) {
 
 	f.Decls = filterEmptyDecls(f.Decls)
 	f.Imports = filterUnusedImports(unusedImport, f.Imports)
+}
+
+func unseenSpec(is *ast.ImportSpec, seen []ast.Spec) bool {
+	for _, spec := range seen {
+		if val, ok := spec.(*ast.ImportSpec); ok && val.Path.Value == is.Path.Value {
+			return false
+		}
+	}
+	return true
+}
+
+func shiftAllRemainingSpecsOneLineHigher(lastPosition token.Pos, in []ast.Spec) {
+	for _, spec := range in {
+		if is, ok := spec.(*ast.ImportSpec); ok {
+			is.Path.ValuePos, lastPosition = lastPosition, is.Path.ValuePos
+		}
+	}
+}
+
+func filterDuplicateSpecs(in []ast.Spec) (out []ast.Spec) {
+	for i, spec := range in {
+		if is, ok := spec.(*ast.ImportSpec); ok && unseenSpec(is, out) {
+			out = append(out, spec)
+		} else {
+			//shift all import positions in file over
+			shiftAllRemainingSpecsOneLineHigher(is.Path.ValuePos, in[i+1:])
+		}
+	}
+	return
 }
 
 func filterUnusedSpecs(unused map[*ast.ImportSpec]bool, in []ast.Spec) (out []ast.Spec) {

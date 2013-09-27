@@ -28,12 +28,12 @@ type exportsToPackages struct {
 	packages []string
 }
 
-func GetImportsFromGoPath() map[string]string {
+func GetImportsFromGoPath(regenIndex bool) map[string]string {
 	fmt.Fprintf(os.Stderr, "\"%v\"\n", os.Getenv("GOPATH"))
 	fileName := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "bradfitz", "goimports", "goPathImports.json")
 	fileInfo, err := os.Stat(fileName)
 	fmt.Fprintf(os.Stderr, "%v\n", err)
-	if err != nil || time.Now().Sub(fileInfo.ModTime()).Hours() > 24.0 {
+	if err != nil || regenIndex || time.Now().Sub(fileInfo.ModTime()).Hours() > 24.0 {
 		// it either doesn't exist or it's unuseable, so let's make a new one
 		filepath.Walk(filepath.Join(goPath, "src/"), func(path string, info os.FileInfo, err error) error {
 			fset := token.NewFileSet()
@@ -43,7 +43,7 @@ func GetImportsFromGoPath() map[string]string {
 				for _, v := range mappings {
 					for _, v2 := range v.Files {
 						for _, v3 := range v2.Scope.Objects {
-							if exportable(v3.Name) && !strings.Contains(currentDir, "code.google.com/p/go") {
+							if exportable(v3.Name) && len(currentDir) > 0 && !strings.Contains(currentDir, "code.google.com/p/go") {
 								toAddToCommon[v.Name+"."+v3.Name] = currentDir[1:]
 							}
 						}
@@ -98,14 +98,7 @@ func GetImportsFromGoPath() map[string]string {
 			os.Exit(0)
 		}
 		if len(goPathDeterminedImports) == 0 {
-			newTime := time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)
-			err = os.Chtimes(fileName, newTime, newTime)
-			if err != nil {
-				// maybe die miserably here?
-				fmt.Fprintf(os.Stderr, "unable to change file added/modification times\n")
-				return nil
-			}
-			return GetImportsFromGoPath()
+			return GetImportsFromGoPath(true)
 		}
 		return goPathDeterminedImports
 	}

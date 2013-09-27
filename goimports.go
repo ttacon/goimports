@@ -24,10 +24,11 @@ import (
 
 var (
 	// main operation modes
-	list      = flag.Bool("l", false, "list files whose formatting differs from goimport's")
-	write     = flag.Bool("w", false, "write result to (source) file instead of stdout")
-	doDiff    = flag.Bool("d", false, "display diffs instead of rewriting files")
-	allErrors = flag.Bool("e", false, "report all errors (not just the first 10 on different lines)")
+	list       = flag.Bool("l", false, "list files whose formatting differs from goimport's")
+	write      = flag.Bool("w", false, "write result to (source) file instead of stdout")
+	doDiff     = flag.Bool("d", false, "display diffs instead of rewriting files")
+	allErrors  = flag.Bool("e", false, "report all errors (not just the first 10 on different lines)")
+	regenIndex = flag.Bool("r", false, "force regeneration of the index file of imports on GOPATH")
 )
 
 var (
@@ -170,7 +171,7 @@ func gofmtMain() {
 		}
 	}
 	// merge common with imports determined from GOPATH
-	importsFromGoPath := GetImportsFromGoPath()
+	importsFromGoPath := GetImportsFromGoPath(*regenIndex)
 	for k, v := range importsFromGoPath {
 		if currentVal, ok := common[k]; ok {
 			//key already exists output warning
