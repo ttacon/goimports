@@ -20,7 +20,7 @@ func getFutureImportPosition(ipath string, declShort map[string]*ast.ImportSpec)
 	return standardLibImportTopPositon
 }
 
-func fixImports(f *ast.File) {
+func fixImports(f *ast.File, fileSet *token.FileSet) {
 	declShort := map[string]*ast.ImportSpec{} // key: either base package "fmt", "http" or renamed package
 	usedShort := map[string]bool{}            // Same key
 	var genDecls []*ast.GenDecl
@@ -120,7 +120,7 @@ func fixImports(f *ast.File) {
 
 	for _, gd := range genDecls {
 		gd.Specs = filterUnusedSpecs(unusedImport, gd.Specs)
-		gd.Specs = filterDuplicateSpecs(gd.Specs)
+		gd.Specs = filterDuplicateSpecs(gd.Specs, fileSet)
 		if len(gd.Specs) == 1 {
 			gd.Lparen = 0
 		}
@@ -139,21 +139,24 @@ func unseenSpec(is *ast.ImportSpec, seen []ast.Spec) bool {
 	return true
 }
 
-func shiftAllRemainingSpecsOneLineHigher(lastPosition token.Pos, in []ast.Spec) {
+func shiftAllRemainingSpecsOneLineHigher(lastPosition token.Pos, in []ast.Spec, fS *token.FileSet) {
 	for _, spec := range in {
 		if is, ok := spec.(*ast.ImportSpec); ok {
+			if fS.Position(lastPosition).Line+1 < fS.Position(is.Path.ValuePos).Line {
+				return
+			}
 			is.Path.ValuePos, lastPosition = lastPosition, is.Path.ValuePos
 		}
 	}
 }
 
-func filterDuplicateSpecs(in []ast.Spec) (out []ast.Spec) {
+func filterDuplicateSpecs(in []ast.Spec, fS *token.FileSet) (out []ast.Spec) {
 	for i, spec := range in {
 		if is, ok := spec.(*ast.ImportSpec); ok && unseenSpec(is, out) {
 			out = append(out, spec)
 		} else {
 			//shift all import positions in file over
-			shiftAllRemainingSpecsOneLineHigher(is.Path.ValuePos, in[i+1:])
+			shiftAllRemainingSpecsOneLineHigher(is.Path.ValuePos, in[i+1:], fS)
 		}
 	}
 	return

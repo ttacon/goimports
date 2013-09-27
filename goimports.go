@@ -93,7 +93,7 @@ func processFile(filename string, in io.Reader, out io.Writer, stdin bool) error
 		return err
 	}
 
-	fixImports(file)
+	fixImports(file, fileSet)
 
 	ast.SortImports(fileSet, file)
 
