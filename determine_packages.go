@@ -50,7 +50,7 @@ func GetImportsFromGoPath(regenIndex bool) map[string]string {
 					}
 				}
 				if err != nil {
-					fmt.Println(err)
+					// fmt.Println(err)
 					return nil
 				}
 			}
